@@ -1,34 +1,58 @@
 var express = require("express")
 var { graphqlHTTP } = require("express-graphql")
 var { buildSchema } = require("graphql")
+const mongoose = require('mongoose');
+const PORT = 4000;
+require('dotenv').config();
+const bcrypt = require('bcryptjs');
+
+const Event = require('./models/event');
+const User = require('./models/user'); 
 
 
 
-const events = [];
 
-// Construct a schema, using GraphQL schema language
-var schema = buildSchema(`
-  type Query {
-    hello: String
-  }
-`)
 
 // The root provides a resolver function for each API endpoint
 var event = {
   events: () => {
-    return events
+    return Event.find().then(events => {
+        return events.map(event => {
+            return {...event._doc, _id: event._doc._id.toString()};
+        });
+    })
   },
     createEvent: (args) => {
-        const event = { 
-            _id: Math.random().toString(),
+        const event = new Event({
             title: args.eventInput.title,
             description: args.eventInput.description,
             price: +args.eventInput.price,
-            date: args.eventInput.date
-        };
-        events.push(event);
-        return event;
-    }}
+            date: new Date(args.eventInput.date)
+        });
+        return event.save().then(result => {
+            console.log(result);
+            return {...result._doc};
+        
+        }).catch(err => {console.log(err); throw err;});
+        
+    },
+    createUser: (args) => {
+        return User.findOne({email: args.userInput.email}).then(user => {
+            if(user){
+                throw new Error('User exists already.');
+            }
+            return bcrypt.hash(args.userInput.password, 12);
+        }).then(hashedPassword => {
+            const user = new User({
+                email: args.userInput.email,
+                password: hashedPassword
+            });
+            return user.save();
+        }).then(result => {
+            return {...result._doc, password: null, _id: result.id};
+        }).catch(err => {throw err;});
+    }
+}
 
 
 var app = express()
@@ -43,17 +67,30 @@ app.use(
             price: Float!
             date: String!
         }
+        type User{
+            _id: ID!
+            email: String!
+            password: String
+            createdEvents: [Event!]
+        }
+
         input EventInput {
             title: String!
             description: String!
             price: Float!
             date: String!
         }
+        input UserInput {
+            email: String!
+            password: String!
+        }
+
       type RootQuery {
         events: [Event!]!
       }
         type RootMutation {
-            createEvent(eventInput: EventInput): Event
+            createEvent(eventInput: EventInput): Event,
+            createUser(userInput: UserInput): User
         }
         schema {
             query: RootQuery
@@ -64,5 +101,16 @@ app.use(
     graphiql: true,
   })
 )
-app.listen(4000)
-console.log("Running a GraphQL API server at http://localhost:4000/graphql")
+// Connect to the MongoDB database
+mongoose.connect(process.env.MONGODB_PASSWORD)
+  .then(() => {
+    console.log("Connected to MongoDB");
+
+    // Start the GraphQL API server
+    app.listen(PORT, () => {
+      console.log(`Running a GraphQL API server at http://localhost:${PORT}/graphql`);
+    });
+  })
+  .catch((err) => {
+    console.error('Error connecting to MongoDB:', err);
+  });
