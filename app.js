@@ -16,7 +16,7 @@ const User = require('./models/user');
 // The root provides a resolver function for each API endpoint
 var event = {
   events: () => {
-    return Event.find().then(events => {
+    return Event.find().populate('creator').then(events => {
         return events.map(event => {
             return {...event._doc, _id: event._doc._id.toString()};
         });
@@ -27,9 +27,18 @@ var event = {
             title: args.eventInput.title,
             description: args.eventInput.description,
             price: +args.eventInput.price,
-            date: new Date(args.eventInput.date)
+            date: new Date(args.eventInput.date),
+            creator: "65426027bf56cb66153fa369"
         });
         return event.save().then(result => {
+          User.findById("65426027bf56cb66153fa369").then(user => {
+            if(!user){
+              throw new Error('User not found.');
+            }
+            user.createdEvents.push(event);
+            user.save();
+          
+          })
             console.log(result);
             return {...result._doc};
         
@@ -66,6 +75,7 @@ app.use(
             description: String!
             price: Float!
             date: String!
+            creator: User
         }
         type User{
             _id: ID!
