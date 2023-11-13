@@ -17,9 +17,9 @@ const userSchema = new Schema({
         ref: 'Event'
         }
 ],
-    // date: {
-    //     type: Date,
-    //     required: true
-    // }
+    date: {
+        type: Date,
+        required: false
+    }
 });
 module.exports = mongoose.model('User', userSchema);
