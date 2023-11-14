@@ -4,8 +4,14 @@ const mongoose = require('mongoose');
 const PORT = 4000;
 require('dotenv').config();
 
-const graphiQLSchema = require('./graphql/schema/index');
-const graphiQlResolver = require('./graphql/resolvers/index');
+
+const Event = require('./models/event');
+const User = require('./models/user'); 
+const graphQlSchema = require('./graphql/schema/index.js');
+const graphQlResolvers = require('./graphql/resolvers/index');
+
+
+
 
 
 
@@ -14,8 +20,10 @@ var app = express()
 app.use(
   "/graphql",
   graphqlHTTP({
-    schema: graphiQLSchema,
-    rootValue: graphiQlResolver,
+
+    schema: graphQlSchema,
+    rootValue: graphQlResolvers,
+
     graphiql: true,
   })
 )
