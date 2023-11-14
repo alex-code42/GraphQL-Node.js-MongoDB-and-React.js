@@ -1,10 +1,9 @@
 var express = require("express")
 var { graphqlHTTP } = require("express-graphql")
-var { buildSchema } = require("graphql")
 const mongoose = require('mongoose');
 const PORT = 4000;
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
+
 
 const Event = require('./models/event');
 const User = require('./models/user'); 
@@ -16,12 +15,15 @@ const graphQlResolvers = require('./graphql/resolvers/index');
 
 
 
+
 var app = express()
 app.use(
   "/graphql",
   graphqlHTTP({
+
     schema: graphQlSchema,
     rootValue: graphQlResolvers,
+
     graphiql: true,
   })
 )
